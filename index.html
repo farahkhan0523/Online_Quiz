@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz Management System</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink:    #0f1117;
+      --paper:  #f7f6f2;
+      --accent: #4f46e5;
+      --accent2:#7c3aed;
+      --gold:   #f59e0b;
+      --white:  #ffffff;
+      --muted:  #6b7280;
+      --card:   #ffffff;
+      --border: #e5e7eb;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── BACKGROUND MESH ── */
+    .mesh {
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(79,70,229,.12) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(124,58,237,.10) 0%, transparent 55%),
+        var(--paper);
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 5%;
+      border-bottom: 1px solid var(--border);
+      background: rgba(247,246,242,.85);
+      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem; font-weight: 700; color: var(--accent);
+      letter-spacing: -.5px;
+    }
+    .nav-badge {
+      font-size: .75rem; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: .3rem .9rem;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 6rem 5% 4rem;
+      max-width: 780px; margin: 0 auto;
+    }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem;
+      font-size: .78rem; font-weight: 600; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--accent);
+      background: rgba(79,70,229,.08); border-radius: 999px;
+      padding: .35rem 1rem; margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      font-weight: 900; line-height: 1.1;
+      color: var(--ink); margin-bottom: 1.5rem;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 1.1rem; color: var(--muted);
+      line-height: 1.7; max-width: 520px; margin: 0 auto 2.5rem;
+    }
+
+    /* ── CTA BUTTON ── */
+    .btn-start {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: 1rem 2.6rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 1rem; font-weight: 700;
+      border: none; border-radius: 999px; cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 8px 28px rgba(79,70,229,.35);
+      transition: transform .2s, box-shadow .2s;
+      letter-spacing: .02em;
+    }
+    .btn-start:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(79,70,229,.42); }
+    .btn-start:active { transform: translateY(0); }
+    .btn-start .arrow { font-size: 1.1rem; transition: transform .2s; }
+    .btn-start:hover .arrow { transform: translateX(4px); }
+
+    /* ── STATS ROW ── */
+    .stats {
+      display: flex; justify-content: center; gap: 2.5rem; flex-wrap: wrap;
+      padding: 0 5% 5rem;
+      max-width: 700px; margin: 0 auto;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 900; color: var(--accent);
+    }
+    .stat-lbl { font-size: .8rem; color: var(--muted); font-weight: 500; margin-top: .2rem; }
+
+    /* ── FEATURE CARDS ── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.5rem; padding: 0 5% 5rem;
+      max-width: 1000px; margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px; padding: 2rem 1.6rem;
+      transition: transform .25s, box-shadow .25s;
+      animation: fadeUp .6s both;
+    }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,.08); }
+    .card-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+    .card p { font-size: .875rem; color: var(--muted); line-height: 1.6; }
+    .card:nth-child(1) { animation-delay: .05s; }
+    .card:nth-child(2) { animation-delay: .12s; }
+    .card:nth-child(3) { animation-delay: .19s; }
+    .card:nth-child(4) { animation-delay: .26s; }
+
+    /* ── STUDENT INFO ── */
+    .student-section {
+      max-width: 600px; margin: 0 auto 5rem;
+      padding: 0 5%;
+    }
+    .student-card {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 20px; padding: 2.5rem 2rem;
+      color: #fff; text-align: center;
+      box-shadow: 0 16px 48px rgba(79,70,229,.3);
+    }
+    .student-card .label {
+      font-size: .75rem; letter-spacing: .14em;
+      text-transform: uppercase; opacity: .75; margin-bottom: .4rem;
+    }
+    .student-card .name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem; font-weight: 700; margin-bottom: 1.2rem;
+    }
+    .student-card .divider {
+      width: 40px; height: 2px; background: rgba(255,255,255,.4);
+      margin: 0 auto 1.2rem;
+    }
+    .student-card .institute {
+      font-size: .95rem; opacity: .9; line-height: 1.5; font-weight: 500;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 1.5rem;
+      font-size: .8rem; color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero { animation: fadeUp .7s both; }
+    .stats { animation: fadeUp .7s .15s both; }
+    .student-section { animation: fadeUp .7s .3s both; }
+  </style>
+</head>
+<body>
+  <div class="mesh"></div>
+
+  <nav>
+    <div class="nav-logo">🎯 QuizMaster</div>
+    <div class="nav-badge">Academic Edition</div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-eyebrow">🏆 Quiz Management System</div>
+    <h1>Test Your Knowledge.<br><span>Challenge Yourself.</span></h1>
+    <p>A fully interactive quiz experience with instant feedback, timed questions, and a personalized certificate on completion.</p>
+    <a href="quiz.html" class="btn-start">Start Quiz <span class="arrow">→</span></a>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num">10</div><div class="stat-lbl">Questions</div></div>
+    <div class="stat"><div class="stat-num">30s</div><div class="stat-lbl">Per Question</div></div>
+    <div class="stat"><div class="stat-num">50%</div><div class="stat-lbl">Passing Score</div></div>
+    <div class="stat"><div class="stat-num">🏆</div><div class="stat-lbl">Certificate</div></div>
+  </div>
+
+  <div class="features">
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <h3>Instant Feedback</h3>
+      <p>See correct and incorrect answers highlighted immediately after each selection.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">⏱</div>
+      <h3>Timed Questions</h3>
+      <p>30-second countdown per question keeps you sharp and focused throughout.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <h3>Live Progress</h3>
+      <p>Track your completion with a dynamic progress bar and question counter.</p>
+    </div>
+    <div class="card">
+      <div class="card-icon">📜</div>
+      <h3>Certificate</h3>
+      <p>Earn a printable certificate with your name, score, and institute on passing.</p>
+    </div>
+  </div>
+
+  <div class="student-section">
+    <div class="student-card">
+      <div class="label">Presented By</div>
+      <div class="name">Farishta Imtiaz</div>
+      <div class="divider"></div>
+      <div class="institute">Himalaya Degree College of Science and Technology, Swabi</div>
+    </div>
+  </div>
+
+  <footer>© 2026 Quiz Management System · Farishta Imtiaz · Himalaya Degree College, Swabi</footer>
+</body>
+</html>
