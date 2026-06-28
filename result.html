@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Result — QuizMaster</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@700;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:    #0f1117;
+      --paper:  #f7f6f2;
+      --accent: #4f46e5;
+      --accent2:#7c3aed;
+      --correct:#16a34a;
+      --wrong:  #dc2626;
+      --gold:   #f59e0b;
+      --muted:  #6b7280;
+      --border: #e5e7eb;
+      --white:  #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--paper);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .mesh {
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 70% 50% at 50% 0%, rgba(79,70,229,.12) 0%, transparent 60%),
+        var(--paper);
+    }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      width: 100%; max-width: 520px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 3rem 2.5rem;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,.07);
+      animation: popIn .6s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.85) translateY(20px); }
+      to   { opacity: 1; transform: scale(1)  translateY(0); }
+    }
+
+    /* ── TROPHY / FAIL ICON ── */
+    .result-icon {
+      font-size: 4rem; margin-bottom: 1.2rem;
+      animation: bounce .8s .4s both;
+    }
+    @keyframes bounce {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+
+    /* ── VERDICT ── */
+    .verdict {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.9rem; font-weight: 900;
+      margin-bottom: .5rem;
+    }
+    .verdict.pass { color: var(--correct); }
+    .verdict.fail { color: var(--wrong); }
+
+    .verdict-sub {
+      font-size: .95rem; color: var(--muted);
+      margin-bottom: 2.5rem; line-height: 1.5;
+    }
+
+    /* ── BIG SCORE ── */
+    .score-circle {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      margin: 0 auto 2.5rem;
+      position: relative;
+    }
+    .score-circle.pass { background: linear-gradient(135deg, #dcfce7, #bbf7d0); }
+    .score-circle.fail { background: linear-gradient(135deg, #fee2e2, #fecaca); }
+    .score-pct {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.6rem; font-weight: 900;
+      line-height: 1;
+    }
+    .score-pct.pass { color: var(--correct); }
+    .score-pct.fail { color: var(--wrong); }
+    .score-lbl { font-size: .72rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
+
+    /* ── STATS GRID ── */
+    .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem; margin-bottom: 2.5rem;
+    }
+    .stat-box {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.1rem .8rem;
+    }
+    .stat-box-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem; font-weight: 900; margin-bottom: .2rem;
+    }
+    .stat-box-num.total   { color: var(--accent); }
+    .stat-box-num.correct { color: var(--correct); }
+    .stat-box-num.wrong   { color: var(--wrong); }
+    .stat-box-lbl { font-size: .72rem; font-weight: 600; color: var(--muted); }
+
+    /* ── PROGRESS BAR ── */
+    .score-bar-wrap {
+      background: var(--border); border-radius: 999px;
+      height: 10px; overflow: hidden; margin-bottom: 2.5rem;
+    }
+    .score-bar {
+      height: 100%; border-radius: 999px;
+      transition: width 1.2s ease;
+    }
+    .score-bar.pass { background: linear-gradient(90deg, var(--correct), #4ade80); }
+    .score-bar.fail { background: linear-gradient(90deg, var(--wrong), #f87171); }
+
+    /* ── BUTTONS ── */
+    .btn-row {
+      display: flex; flex-direction: column; gap: .9rem;
+    }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: .5rem;
+      padding: .9rem 1.5rem;
+      border-radius: 14px; font-size: .95rem; font-weight: 700;
+      border: none; cursor: pointer; text-decoration: none;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(79,70,229,.3);
+    }
+    .btn-primary:hover { box-shadow: 0 10px 28px rgba(79,70,229,.4); }
+    .btn-secondary {
+      background: var(--paper); color: var(--ink);
+      border: 1.5px solid var(--border);
+    }
+    .btn-outline {
+      background: transparent; color: var(--accent);
+      border: 2px solid var(--accent);
+    }
+    .btn-outline.hidden { display: none; }
+
+    @media (max-width: 400px) {
+      .result-card { padding: 2rem 1.4rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mesh"></div>
+
+  <div class="result-card" id="resultCard">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <div class="verdict" id="verdict"></div>
+    <div class="verdict-sub" id="verdictSub"></div>
+
+    <div class="score-circle" id="scoreCircle">
+      <div class="score-pct" id="scorePct">0%</div>
+      <div class="score-lbl">Score</div>
+    </div>
+
+    <div class="score-bar-wrap">
+      <div class="score-bar" id="scoreBar" style="width:0%"></div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-box-num total" id="totalNum">—</div>
+        <div class="stat-box-lbl">Total Qs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-num correct" id="correctNum">—</div>
+        <div class="stat-box-lbl">✔ Correct</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-num wrong" id="wrongNum">—</div>
+        <div class="stat-box-lbl">✘ Wrong</div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <a href="certificate.html" class="btn btn-primary" id="btnCert">📜 View Certificate</a>
+      <a href="quiz.html" class="btn btn-secondary">🔁 Retry Quiz</a>
+      <a href="index.html" class="btn btn-outline">🏠 Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    const score   = parseInt(localStorage.getItem('qms_score')   ?? 0);
+    const total   = parseInt(localStorage.getItem('qms_total')   ?? 10);
+    const wrong   = parseInt(localStorage.getItem('qms_wrong')   ?? 0);
+    const percent = parseInt(localStorage.getItem('qms_percent') ?? 0);
+    const passed  = percent >= 50;
+
+    document.getElementById('resultIcon').textContent   = passed ? '🏆' : '😔';
+    document.getElementById('verdict').textContent      = passed ? 'Congratulations!' : 'Better Luck Next Time';
+    document.getElementById('verdict').className        = 'verdict ' + (passed ? 'pass' : 'fail');
+    document.getElementById('verdictSub').textContent   = passed
+      ? `Great work! You passed with a score of ${percent}%.`
+      : `You scored ${percent}%. You need 50% to pass. Keep practising!`;
+
+    document.getElementById('scoreCircle').className   = 'score-circle ' + (passed ? 'pass' : 'fail');
+    document.getElementById('scorePct').className      = 'score-pct '    + (passed ? 'pass' : 'fail');
+    document.getElementById('scoreBar').className      = 'score-bar '    + (passed ? 'pass' : 'fail');
+
+    document.getElementById('totalNum').textContent   = total;
+    document.getElementById('correctNum').textContent = score;
+    document.getElementById('wrongNum').textContent   = wrong;
+
+    // Animate score count-up
+    let n = 0;
+    const target = percent;
+    const el = document.getElementById('scorePct');
+    const ticker = setInterval(() => {
+      n = Math.min(n + 2, target);
+      el.textContent = n + '%';
+      if (n >= target) clearInterval(ticker);
+    }, 20);
+
+    // Animate bar
+    setTimeout(() => {
+      document.getElementById('scoreBar').style.width = percent + '%';
+    }, 300);
+
+    // Hide certificate if failed
+    if (!passed) {
+      document.getElementById('btnCert').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

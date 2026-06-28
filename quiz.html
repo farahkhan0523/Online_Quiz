@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz — QuizMaster</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Playfair+Display:wght@700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --ink:    #0f1117;
+      --paper:  #f7f6f2;
+      --accent: #4f46e5;
+      --accent2:#7c3aed;
+      --correct:#16a34a;
+      --wrong:  #dc2626;
+      --muted:  #6b7280;
+      --border: #e5e7eb;
+      --white:  #ffffff;
+      --card-bg:#ffffff;
+      --timer-warn: #f59e0b;
+      --timer-danger: #ef4444;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--paper);
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    .mesh {
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        radial-gradient(ellipse 70% 50% at 10% 0%,  rgba(79,70,229,.1)  0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 90% 100%, rgba(124,58,237,.09) 0%, transparent 55%),
+        var(--paper);
+    }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      width: 100%; max-width: 680px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+    .home-link {
+      font-size: .85rem; font-weight: 600; color: var(--accent);
+      text-decoration: none; display: flex; align-items: center; gap: .35rem;
+      transition: gap .2s;
+    }
+    .home-link:hover { gap: .6rem; }
+    .q-counter {
+      font-size: .85rem; font-weight: 700; color: var(--muted);
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 999px; padding: .3rem .9rem;
+    }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      width: 100%; max-width: 680px;
+      background: var(--border); border-radius: 999px;
+      height: 6px; overflow: hidden; margin-bottom: 2rem;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 999px;
+      transition: width .5s ease;
+    }
+
+    /* ── QUIZ CARD ── */
+    .quiz-card {
+      width: 100%; max-width: 680px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+      animation: fadeIn .4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── TIMER ── */
+    .timer-row {
+      display: flex; align-items: center; justify-content: flex-end;
+      gap: .5rem; margin-bottom: 1.6rem;
+    }
+    .timer-icon { font-size: 1rem; }
+    .timer-display {
+      font-size: .95rem; font-weight: 700; color: var(--muted);
+      min-width: 2.5rem; text-align: right;
+      transition: color .3s;
+    }
+    .timer-display.warn  { color: var(--timer-warn); }
+    .timer-display.danger { color: var(--timer-danger); animation: pulse .6s infinite; }
+    .timer-ring {
+      width: 44px; height: 44px;
+    }
+    .timer-ring circle {
+      fill: none; stroke: var(--border);
+      stroke-width: 3;
+    }
+    .timer-ring .arc {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-dasharray: 113;
+      stroke-dashoffset: 0;
+      transform: rotate(-90deg);
+      transform-origin: center;
+      transition: stroke-dashoffset .9s linear, stroke .3s;
+    }
+    .timer-ring .arc.warn   { stroke: var(--timer-warn); }
+    .timer-ring .arc.danger { stroke: var(--timer-danger); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; } 50% { opacity: .5; }
+    }
+
+    /* ── QUESTION ── */
+    .q-label {
+      font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+      font-weight: 700; color: var(--accent); margin-bottom: .7rem;
+    }
+    .q-text {
+      font-size: 1.2rem; font-weight: 700; line-height: 1.5;
+      color: var(--ink); margin-bottom: 2rem;
+    }
+
+    /* ── OPTIONS ── */
+    .options { display: flex; flex-direction: column; gap: .85rem; }
+
+    .option {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 1rem 1.2rem;
+      background: var(--paper);
+      border: 2px solid var(--border);
+      border-radius: 14px; cursor: pointer;
+      transition: border-color .18s, background .18s, transform .18s;
+      font-size: .95rem; font-weight: 500; color: var(--ink);
+      position: relative; overflow: hidden;
+      user-select: none;
+    }
+    .option::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      opacity: 0; transition: opacity .18s;
+      border-radius: 12px;
+    }
+    .option:hover:not(.disabled) {
+      border-color: var(--accent);
+      transform: translateX(4px);
+    }
+    .option:hover:not(.disabled)::before { opacity: .04; }
+
+    .option-letter {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; flex-shrink: 0;
+      border: 2px solid var(--border); border-radius: 8px;
+      font-size: .8rem; font-weight: 800; color: var(--muted);
+      transition: all .18s;
+      position: relative; z-index: 1;
+    }
+    .option-text { position: relative; z-index: 1; flex: 1; }
+    .option-icon {
+      position: relative; z-index: 1;
+      font-size: 1.1rem; opacity: 0;
+      transform: scale(0); transition: all .25s;
+    }
+
+    /* correct */
+    .option.correct {
+      background: #f0fdf4; border-color: var(--correct);
+      transform: translateX(0);
+    }
+    .option.correct .option-letter {
+      background: var(--correct); border-color: var(--correct); color: #fff;
+    }
+    .option.correct .option-icon { opacity: 1; transform: scale(1); }
+
+    /* wrong */
+    .option.wrong {
+      background: #fef2f2; border-color: var(--wrong);
+    }
+    .option.wrong .option-letter {
+      background: var(--wrong); border-color: var(--wrong); color: #fff;
+    }
+    .option.wrong .option-icon { opacity: 1; transform: scale(1); }
+
+    .option.disabled { cursor: not-allowed; pointer-events: none; }
+
+    /* ── NEXT BTN ── */
+    .btn-next {
+      width: 100%; padding: 1rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 1rem; font-weight: 700;
+      border: none; border-radius: 14px; cursor: pointer;
+      margin-top: 1.8rem;
+      display: none; /* shown after answer */
+      transition: transform .2s, box-shadow .2s;
+      box-shadow: 0 6px 20px rgba(79,70,229,.3);
+      letter-spacing: .02em;
+    }
+    .btn-next.visible { display: block; animation: fadeIn .3s ease; }
+    .btn-next:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(79,70,229,.38); }
+    .btn-next:active { transform: translateY(0); }
+
+    /* ── SCORE STRIP ── */
+    .score-strip {
+      width: 100%; max-width: 680px;
+      display: flex; justify-content: center; gap: 2rem;
+      margin-top: 1.5rem;
+    }
+    .score-pill {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .85rem; font-weight: 700;
+      padding: .45rem 1.1rem;
+      border-radius: 999px; border: 1.5px solid var(--border);
+      background: var(--white);
+    }
+    .score-pill.correct-pill { color: var(--correct); border-color: #bbf7d0; background: #f0fdf4; }
+    .score-pill.wrong-pill   { color: var(--wrong);   border-color: #fecaca; background: #fef2f2; }
+
+    @media (max-width: 480px) {
+      .quiz-card { padding: 1.8rem 1.2rem; }
+      .q-text { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="mesh"></div>
+
+  <div class="topbar">
+    <a href="index.html" class="home-link">← Home</a>
+    <div class="q-counter" id="qCounter">1 / 10</div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <div class="quiz-card" id="quizCard">
+    <div class="timer-row">
+      <svg class="timer-ring" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="18"/>
+        <circle class="arc" id="timerArc" cx="20" cy="20" r="18"/>
+      </svg>
+      <span class="timer-display" id="timerDisplay">30</span>
+    </div>
+    <div class="q-label" id="qLabel">Question 1</div>
+    <div class="q-text" id="qText"></div>
+    <div class="options" id="optionsContainer"></div>
+    <button class="btn-next" id="btnNext">Next Question →</button>
+  </div>
+
+  <div class="score-strip">
+    <div class="score-pill correct-pill">✔ <span id="correctCount">0</span> Correct</div>
+    <div class="score-pill wrong-pill">✘ <span id="wrongCount">0</span> Wrong</div>
+  </div>
+
+  <script>
+    // ── QUESTION BANK ──────────────────────────────────────────
+    const ALL_QUESTIONS = [
+      { q: "What does HTML stand for?",
+        opts: ["HyperText Markup Language","HighText Machine Language","HyperText Machine Language","HyperLinks and Text Markup Language"],
+        ans: 0 },
+      { q: "Which CSS property is used to change the text color?",
+        opts: ["text-color","font-color","color","foreground-color"],
+        ans: 2 },
+      { q: "What does CSS stand for?",
+        opts: ["Creative Style Sheets","Cascading Style Sheets","Computer Style Sheets","Colorful Style Sheets"],
+        ans: 1 },
+      { q: "Which keyword declares a variable in JavaScript that cannot be reassigned?",
+        opts: ["var","let","const","static"],
+        ans: 2 },
+      { q: "Which HTML tag is used to create a hyperlink?",
+        opts: ["<link>","<a>","<href>","<url>"],
+        ans: 1 },
+      { q: "What is the correct way to write a comment in JavaScript?",
+        opts: ["<!-- comment -->","/* comment */","// comment","** comment **"],
+        ans: 2 },
+      { q: "Which of these is NOT a JavaScript data type?",
+        opts: ["String","Boolean","Integer","Undefined"],
+        ans: 2 },
+      { q: "What does DOM stand for?",
+        opts: ["Document Object Model","Data Object Model","Document Oriented Model","Digital Ordinance Module"],
+        ans: 0 },
+      { q: "Which method adds an element to the END of an array in JavaScript?",
+        opts: ["unshift()","push()","append()","add()"],
+        ans: 1 },
+      { q: "What is the correct HTML element for the largest heading?",
+        opts: ["<heading>","<h6>","<h1>","<head>"],
+        ans: 2 },
+      { q: "Which CSS property controls the space INSIDE a box (between content and border)?",
+        opts: ["margin","spacing","padding","border-gap"],
+        ans: 2 },
+      { q: "What symbol is used to select an element by ID in CSS?",
+        opts: [".","#","*","@"],
+        ans: 1 },
+      { q: "Which tag is used for an unordered list in HTML?",
+        opts: ["<ol>","<list>","<ul>","<li>"],
+        ans: 2 },
+      { q: "What does JSON stand for?",
+        opts: ["JavaScript Object Notation","Java Standard Output Node","JavaScript Online Network","Java Source Object Name"],
+        ans: 0 },
+      { q: "Which event fires when a user clicks a button?",
+        opts: ["onhover","onchange","onclick","onload"],
+        ans: 2 },
+    ];
+
+    const TOTAL = 10;
+    const TIME_PER_Q = 30;
+    const CIRCUMFERENCE = 2 * Math.PI * 18; // ≈113
+
+    // ── STATE ──────────────────────────────────────────────────
+    let questions = [];
+    let current = 0;
+    let score = 0;
+    let wrongs = 0;
+    let answered = false;
+    let timerInterval = null;
+    let timeLeft = TIME_PER_Q;
+
+    // ── ELEMENTS ──────────────────────────────────────────────
+    const qLabel  = document.getElementById('qLabel');
+    const qText   = document.getElementById('qText');
+    const optsCtr = document.getElementById('optionsContainer');
+    const btnNext = document.getElementById('btnNext');
+    const qCounter= document.getElementById('qCounter');
+    const progBar = document.getElementById('progressBar');
+    const timerDisp = document.getElementById('timerDisplay');
+    const timerArc   = document.getElementById('timerArc');
+    const correctEl  = document.getElementById('correctCount');
+    const wrongEl    = document.getElementById('wrongCount');
+    const quizCard   = document.getElementById('quizCard');
+
+    const LETTERS = ['A','B','C','D'];
+
+    // ── SHUFFLE ───────────────────────────────────────────────
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // ── INIT ──────────────────────────────────────────────────
+    function init() {
+      questions = shuffle(ALL_QUESTIONS).slice(0, TOTAL);
+      loadQuestion();
+    }
+
+    // ── LOAD QUESTION ─────────────────────────────────────────
+    function loadQuestion() {
+      answered = false;
+      btnNext.classList.remove('visible');
+
+      const q = questions[current];
+      qLabel.textContent  = `Question ${current + 1}`;
+      qText.textContent   = q.q;
+      qCounter.textContent = `${current + 1} / ${TOTAL}`;
+      progBar.style.width  = `${(current / TOTAL) * 100}%`;
+
+      // animate card
+      quizCard.style.animation = 'none';
+      quizCard.offsetHeight;
+      quizCard.style.animation = 'fadeIn .4s ease';
+
+      // build options
+      optsCtr.innerHTML = '';
+      q.opts.forEach((opt, i) => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.dataset.index = i;
+        div.innerHTML = `
+          <div class="option-letter">${LETTERS[i]}</div>
+          <div class="option-text">${opt}</div>
+          <div class="option-icon" id="icon-${i}"></div>`;
+        div.addEventListener('click', () => selectAnswer(i));
+        optsCtr.appendChild(div);
+      });
+
+      startTimer();
+    }
+
+    // ── TIMER ─────────────────────────────────────────────────
+    function startTimer() {
+      clearInterval(timerInterval);
+      timeLeft = TIME_PER_Q;
+      updateTimerUI();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerUI();
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timeExpired();
+        }
+      }, 1000);
+    }
+
+    function updateTimerUI() {
+      timerDisp.textContent = timeLeft;
+      const offset = CIRCUMFERENCE - (timeLeft / TIME_PER_Q) * CIRCUMFERENCE;
+      timerArc.style.strokeDashoffset = offset;
+
+      const cls = timeLeft <= 5 ? 'danger' : timeLeft <= 10 ? 'warn' : '';
+      timerDisp.className = 'timer-display ' + cls;
+      timerArc.className  = 'arc ' + cls;
+    }
+
+    function timeExpired() {
+      if (!answered) {
+        answered = true;
+        markOptions(-1); // -1 = time-out, no selection
+        wrongs++;
+        wrongEl.textContent = wrongs;
+        showNext();
+      }
+    }
+
+    // ── SELECT ANSWER ─────────────────────────────────────────
+    function selectAnswer(chosen) {
+      if (answered) return;
+      answered = true;
+      clearInterval(timerInterval);
+
+      const correct = questions[current].ans;
+
+      if (chosen === correct) {
+        score++;
+        correctEl.textContent = score;
+      } else {
+        wrongs++;
+        wrongEl.textContent = wrongs;
+      }
+
+      markOptions(chosen);
+      showNext();
+    }
+
+    function markOptions(chosen) {
+      const correct = questions[current].ans;
+      const opts = optsCtr.querySelectorAll('.option');
+      opts.forEach(o => o.classList.add('disabled'));
+
+      // highlight correct always
+      opts[correct].classList.add('correct');
+      opts[correct].querySelector('.option-icon').textContent = '✔';
+
+      // highlight wrong if user picked wrong
+      if (chosen !== -1 && chosen !== correct) {
+        opts[chosen].classList.add('wrong');
+        opts[chosen].querySelector('.option-icon').textContent = '❌';
+      }
+    }
+
+    function showNext() {
+      if (current < TOTAL - 1) {
+        btnNext.textContent = 'Next Question →';
+      } else {
+        btnNext.textContent = 'See Results 🏆';
+      }
+      btnNext.classList.add('visible');
+
+      // auto-advance after 1.8s
+      setTimeout(() => {
+        if (answered) advance();
+      }, 1800);
+    }
+
+    function advance() {
+      if (current < TOTAL - 1) {
+        current++;
+        loadQuestion();
+      } else {
+        finishQuiz();
+      }
+    }
+
+    btnNext.addEventListener('click', () => {
+      clearTimeout(); // cancel auto if user clicks manually
+      advance();
+    });
+
+    // ── FINISH ────────────────────────────────────────────────
+    function finishQuiz() {
+      progBar.style.width = '100%';
+      localStorage.setItem('qms_score',   score);
+      localStorage.setItem('qms_total',   TOTAL);
+      localStorage.setItem('qms_wrong',   wrongs);
+      localStorage.setItem('qms_percent', Math.round((score / TOTAL) * 100));
+      window.location.href = 'result.html';
+    }
+
+    // ── START ─────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>
